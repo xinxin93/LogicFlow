@@ -28,6 +28,8 @@ interface IBaseModel {
   setProperties(properties: Object): void;
 
   updateAttributes(attributes: Object): void;
+
+  [key: string]: any;
 }
 
 export {

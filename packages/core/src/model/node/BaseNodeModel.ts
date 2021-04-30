@@ -53,6 +53,7 @@ export default class BaseNodeModel implements IBaseModel {
   sourceRules: ConnectRule[] = [];
   hasSetTargetRules = false; // 用来限制rules的重复值
   hasSetSourceRules = false; // 用来限制rules的重复值
+  [key: string]: any;
   @observable properties = {};
   @observable type = '';
   @observable x = defaultConfig.x;

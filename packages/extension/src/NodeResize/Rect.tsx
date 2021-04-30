@@ -1,5 +1,5 @@
-import { h } from 'preact';
-import { Point, Size } from '@logicflow/core';
+// import { h } from 'preact';
+import { Point, Size, h } from '@logicflow/core';
 
 // TODO: 常用的属性集合定一个interface
 type IProps = {

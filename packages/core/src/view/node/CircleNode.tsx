@@ -28,7 +28,7 @@ export default class CircleNode extends BaseNode {
       ...style,
     };
   }
-  getShape() {
+  getShape(): any {
     const attributes = this.getAttributes();
     return (
       <Circle

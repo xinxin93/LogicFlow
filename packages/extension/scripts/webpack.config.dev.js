@@ -24,7 +24,7 @@ module.exports = [
       // new ESLintPlugin({
       //   extensions: ['ts', 'tsx'],
       // }),
-      new webpack.EnvironmentPlugin(['NODE_ENV', 'MOCK_TYPE']),
+      // new webpack.EnvironmentPlugin(['NODE_ENV', 'MOCK_TYPE']),
     ],
   },
 ];

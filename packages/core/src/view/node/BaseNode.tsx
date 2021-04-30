@@ -14,12 +14,12 @@ type IProps = {
   eventCenter: EventEmitter;
 };
 
-type Istate = {
+type IState = {
   isDraging: boolean,
   isHovered: boolean,
 };
 
-export default abstract class BaseNode extends Component<IProps, Istate> {
+export default abstract class BaseNode extends Component<IProps, IState> {
   static getModel(defaultModel) {
     return defaultModel;
   }
@@ -49,7 +49,7 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
       isHovered: false,
     };
   }
-  abstract getShape();
+  abstract getShape(): any;
   getShapeStyle() {
     const {
       model: {

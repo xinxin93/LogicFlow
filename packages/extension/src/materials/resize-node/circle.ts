@@ -1,5 +1,14 @@
 import { CircleNodeModel, CircleNode, h } from '@logicflow/core';
 
+type IProps = {
+  model: CircleNodeModel;
+  graphModel: any;
+};
+
+type IState = {
+  moveX: number,
+};
+
 export class ResizeCircleNodeModel extends CircleNodeModel {
   static extendKey = 'CircleNodeModel';
   updateRadius(r) {
@@ -11,9 +20,11 @@ export class ResizeCircleNode extends CircleNode {
   static extendKey = 'CircleNode';
   startX: number;
   startY: number;
+  r: any;
   constructor(props) {
     super(props);
     this.state = {
+      // @ts-ignore
       moveX: 0,
     };
   }
@@ -26,6 +37,7 @@ export class ResizeCircleNode extends CircleNode {
     if (properties.background) {
       fill = properties.background;
     }
+    // @ts-ignore
     const { moveX } = this.state;
     width += moveX * 2;
     height += moveX * 2;
@@ -58,8 +70,10 @@ export class ResizeCircleNode extends CircleNode {
   handleMouseUp = () => {
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
+    // @ts-ignore
     const { moveX } = this.state;
     this.setState({
+      // @ts-ignore
       moveX: 0,
     });
     const { r } = super.getAttributes();
