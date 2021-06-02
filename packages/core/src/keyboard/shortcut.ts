@@ -37,7 +37,7 @@ function translationEdgeData(edgeData, distance) {
 
 const TRANSLATION_DISTANCE = 40;
 
-export function initShortcut(lf: LogicFlow, graph: GraphModel) {
+export function initDefaultShortcut(lf: LogicFlow, graph: GraphModel) {
   const { keyboard } = lf;
   const { options: { keyboard: keyboardOptions } } = keyboard;
 
@@ -45,7 +45,11 @@ export function initShortcut(lf: LogicFlow, graph: GraphModel) {
   keyboard.on(['cmd + c', 'ctrl + c'], () => {
     if (!keyboardOptions.enabled) return;
     if (graph.textEditElement) return;
-    selected = graph.getSelectElements(false);
+    const { guards } = lf.options;
+    const elements = graph.getSelectElements(false);
+    const enabledClone = guards && guards.beforeClone ? guards.beforeClone(elements) : true;
+    if (!enabledClone) return false;
+    selected = elements;
     selected.nodes.forEach(node => translationNodeData(node, TRANSLATION_DISTANCE));
     selected.edges.forEach(edge => translationEdgeData(edge, TRANSLATION_DISTANCE));
     return false;
@@ -57,6 +61,7 @@ export function initShortcut(lf: LogicFlow, graph: GraphModel) {
     if (selected && (selected.nodes || selected.edges)) {
       lf.clearSelectElements();
       const addElements = lf.addElements(selected);
+      if (!addElements) return;
       addElements.nodes.forEach(node => lf.select(node.id, true));
       addElements.edges.forEach(edge => lf.select(edge.id, true));
       selected.nodes.forEach(node => translationNodeData(node, TRANSLATION_DISTANCE));
@@ -82,7 +87,7 @@ export function initShortcut(lf: LogicFlow, graph: GraphModel) {
   keyboard.on(['backspace'], () => {
     if (!keyboardOptions.enabled) return;
     if (graph.textEditElement) return;
-    const elements = graph.getSelectElements();
+    const elements = graph.getSelectElements(true);
     lf.clearSelectElements();
     elements.edges.forEach(edge => lf.deleteEdge(edge.id));
     elements.nodes.forEach(node => lf.deleteNode(node.id));

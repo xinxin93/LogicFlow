@@ -1,19 +1,17 @@
-import RectLabelNodeView from './RectLabelNodeView';
+import { RectNodeModel } from '@logicflow/core';
+import { RectLabelNodeView } from './RectLabelNodeView';
 
 const RectLabelNode = {
+  name: 'rect-label-node',
   install(lf) {
-    lf.register('rect-label', this.registerLabelPlusNode);
-  },
-  registerLabelPlusNode({ RectNode, RectNodeModel, h }) {
-    return {
+    lf.register({
+      type: 'rect-label',
       model: RectNodeModel,
-      view: RectLabelNodeView(RectNode, h),
-    };
+      view: RectLabelNodeView,
+    });
   },
 };
 
 export default RectLabelNode;
 
-export {
-  RectLabelNode,
-};
+export { RectLabelNode };

@@ -3,7 +3,7 @@ import Circle from '../basic-shape/Circle';
 import BaseNode from './BaseNode';
 import GraphModel from '../../model/GraphModel';
 import EventEmitter from '../../event/eventEmitter';
-import { CircleNodeModel } from '../../LogicFlow';
+import { CircleNodeModel } from '../../model';
 
 type IProps = {
   model: CircleNodeModel;
@@ -12,21 +12,12 @@ type IProps = {
 };
 
 export default class CircleNode extends BaseNode {
-  r: number;
-  constructor(props: IProps) {
-    super(props);
-    const {
-      model: {
-        r,
-      },
-    } = props as IProps;
-    this.r = r;
-  }
   getShapeStyle() {
     const style = super.getShapeStyle();
+    const { model: { r } } = this.props as IProps;
     return {
       ...style,
-      r: this.r,
+      r,
     };
   }
   getAttributes() {

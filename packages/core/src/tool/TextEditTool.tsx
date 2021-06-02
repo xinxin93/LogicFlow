@@ -1,13 +1,13 @@
 import {
   h, Component, createRef,
 } from 'preact';
-import { observer } from 'mobx-react';
 import LogicFlow from '../LogicFlow';
 // import BaseNodeModel from '../model/node/BaseNodeModel';
 import GraphModel from '../model/GraphModel';
 import BaseEdgeModel from '../model/edge/BaseEdgeModel';
 import BaseNodeModel from '../model/node/BaseNodeModel';
 import { ElementType } from '../constant/constant';
+import { observer } from '..';
 // import { ElementState } from '../constant/constant';
 
 type Style = {
@@ -84,16 +84,15 @@ export default class TextEdit extends Component<IProps, IState> {
     const {
       graphModel,
     } = this.props;
-    const {
-      textEditElement,
-    } = graphModel;
     if (this.ref.current) {
       this.ref.current.focus();
       this.placeCaretAtEnd(this.ref.current);
     }
-    if (this.__prevText.id !== '' && !textEditElement) {
+    if (this.__prevText.id !== '') {
       const { text, id } = this.__prevText;
       graphModel.setElementTextById(id, text);
+      this.__prevText.id = '';
+      this.__prevText.text = '';
     }
   }
   keyupHandler = (ev: KeyboardEvent) => {
@@ -132,6 +131,7 @@ export default class TextEdit extends Component<IProps, IState> {
             className="lf-text-input"
             style={style}
             ref={this.ref}
+            key={textEditElement.id}
             onKeyUp={this.keyupHandler}
           >
             {textEditElement.text?.value}

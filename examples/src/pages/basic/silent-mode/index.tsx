@@ -33,7 +33,7 @@ const data = {
       type: 'circle',
       x: 380,
       y: 180,
-      text: 'Logic Flow'
+      text: 'LogicFlow'
     }
   ],
   edges: [
@@ -63,7 +63,10 @@ export default function SilentModeExample() {
 
   return (
     <>
-      <ExampleHeader content="静默模式下不可编辑" />
+      <ExampleHeader
+        content="静默模式下不可编辑"
+        githubPath="/basic/silent-mode/index.tsx"
+      />
       <div id="graph" className="viewport" />
     </>
   )

@@ -237,7 +237,7 @@ export const inStraightLineOfRect = (point: Point, node: BaseNode): boolean => {
     minX: rect.x - rect.width / 2 + rect.radius,
     maxX: rect.x + rect.width / 2 - rect.radius,
     minY: rect.y - rect.height / 2 + rect.radius,
-    maxY: rect.x + rect.height / 2 - rect.radius,
+    maxY: rect.y + rect.height / 2 - rect.radius,
   };
   const {
     x, y, width, height,
@@ -352,4 +352,25 @@ export const pickNodeConfig = (data): NodeConfig => {
     'properties',
   ]);
   return nodeData;
+};
+
+/**
+ * 基于节点的边，重新获取新的节点
+ */
+export const getNodeAnchorPosition = (center, point, width, height) => {
+  let { x, y } = center;
+  if (point.x > center.x) {
+    x = center.x + width / 2;
+  } else if (point.x < center.x) {
+    x = center.x - width / 2;
+  }
+  if (point.y > center.y) {
+    y = center.y + height / 2;
+  } else if (point.y < center.y) {
+    y = center.y - height / 2;
+  }
+  return {
+    x,
+    y,
+  };
 };

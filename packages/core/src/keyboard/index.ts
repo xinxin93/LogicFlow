@@ -34,7 +34,6 @@ class Keyboard {
     const { lf } = options;
     this.target = lf.container;
     this.mousetrap = new Mousetrap(this.target);
-    this.initShortcuts();
     if (options.keyboard.enabled) {
       this.enable(true);
     }
@@ -73,6 +72,8 @@ class Keyboard {
       this.options.keyboard.enabled = true;
       if (this.target instanceof HTMLElement) {
         this.target.setAttribute('tabindex', '-1');
+        // 去掉节点被选中时container出现的边框
+        this.target.style.outline = 'none';
       }
     }
   }

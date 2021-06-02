@@ -1,6 +1,6 @@
 # 主题 Theme 样式
 
-Logic Flow 提供了设置主题的方法，便于用户统一设置其内部所有元素的样式。  
+LogicFlow 提供了设置主题的方法，便于用户统一设置其内部所有元素的样式。  
 设置方式有两种：
 - 初始化`LogicFlow`时作为配置传入
 - 初始化后，调用`LogicFlow`的 setTheme 方法  
@@ -233,6 +233,12 @@ lf.setTheme({
 |fontSize|number|字体大小|1|
 |fontWeight|string/number|字体粗细|normal|
 |fontFamily|string|字体名称|''|
+|dx|number|水平偏移量|None|
+|dy|number|垂直偏移量|None|
+|textAnchor|string|对齐方式|inherit|
+|rotate|number|文字旋转角度|0|
+|textLength|number|文本长度|None|
+|lengthAdjust|string|文本伸缩方式|'spacing'|
 <details>
 <summary>点击展开查看节点文本样式设置</summary>
 
@@ -373,6 +379,7 @@ lf.setTheme({
 |-|-|-|-|
 |stroke|color|连线颜色|#000000|
 |strokeWidth|number|连线宽度|2|
+|strokeDashArray|string|控制连线的点划线的图案范式, 设置为空是为实线|'1,0'|
 |hoverStroke|color|连线hover颜色|#000000|
 |selectedStroke|color|连线选中颜色|#000000|
 |outlineColor|color|外边框颜色|#000000|
@@ -385,6 +392,7 @@ lf.setTheme({
   line: {
     stroke: '#000000',
     strokeWidth: 2,
+    strokeDashArray: '1,0',
     hoverStroke: '#000000',
     selectedStroke: '#000000',
     selectedShadow: true,
@@ -401,6 +409,7 @@ lf.setTheme({
 |-|-|-|-|
 |stroke|color|连线颜色|#000000|
 |strokeWidth|number|连线宽度|2|
+|strokeDashArray|string|控制连线的点划线的图案范式, 设置为空是为实线|'1,0'|
 |hoverStroke|color|连线hover颜色|#000000|
 |selectedStroke|color|连线选中颜色|#000000|
 |outlineColor|color|外边框颜色|#000000|
@@ -414,6 +423,7 @@ lf.setTheme({
   polyline: {
     stroke: '#000000',
     strokeWidth: 2,
+    strokeDashArray: '1,0',
     hoverStroke: '#000000',
     selectedStroke: '#000000',
     selectedShadow: true,
@@ -433,14 +443,24 @@ lf.setTheme({
 |fontSize|number|字体大小|1|
 |fontWeight|string/number|字体粗细|normal|
 |fontFamily|string|字体名称|''|
-|background|object|文本背景(矩形)|{}|
-背景
+|background|BackgroundObject|文本背景(矩形)|[BackgroundObject](/guide/advance/theme.html#backgroundobject)|
+|hoverBackground|BackgroundObject|文本背景(矩形)|null|
+|dx|number|水平偏移量|None|
+|dy|number|垂直偏移量|None|
+|textAnchor|string|对齐方式|inherit|
+|rotate|number|文字旋转角度|0|
+|textLength|number|文本长度|None|
+|lengthAdjust|string|文本拉伸或压缩方式|'spacing'|
+
+### `BackgroundObject`
+
 |key|type|description|default|
 |-|-|-|-|
 |fill|color|填充颜色|transparent|
 |height|number|高度|20|
 |stroke|number|边框颜色|transparent|
 |radius|number|圆角弧度|0|
+
 <details>
 <summary>点击展开查看连线文本样式设置</summary>
 
@@ -457,9 +477,16 @@ lf.setTheme({
       stroke: 'transparent',
       radius: 0,
     },
+    hoverBackground: {
+      fill: 'transparent',
+      height: 20,
+      stroke: 'transparent',
+      radius: 0,
+    },
   },
 })
 ```
+
 </details>
 
 

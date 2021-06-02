@@ -7,6 +7,7 @@ import BaseText from '../text/BaseText';
 import EventEmitter from '../../event/eventEmitter';
 import { ElementState, EventType } from '../../constant/constant';
 import { StepDrag } from '../../util/drag';
+import { isIe } from '../../util/browser';
 
 type IProps = {
   model: BaseNodeModel;
@@ -24,9 +25,8 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
     return defaultModel;
   }
   stepDrag: StepDrag;
-  startTime: number;
-  preStartTime: number;
   contextMenuTime: number;
+  startTime: number;
   clickTimer: number;
   constructor(props) {
     super();
@@ -106,32 +106,33 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
       ...style,
     };
   }
-  getProperties() {
+  getProperties(): Record<string, any> {
     const { model } = this.props;
     return model.getProperties();
   }
   /* 支持节点自定义锚点样式 */
-  getAnchorStyle() {
+  getAnchorStyle(): Record<string, any> {
     const { graphModel } = this.props;
     const { anchor } = graphModel.theme;
-    return anchor;
+    // 防止被重写覆盖主题。
+    return { ...anchor };
   }
   /* 支持节点自定义锚点hover样式 */
-  getAnchorHoverStyle() {
+  getAnchorHoverStyle(): Record<string, any> {
     const { graphModel } = this.props;
     const { anchorHover } = graphModel.theme;
-    return anchorHover;
+    return { ...anchorHover };
   }
   /* 锚点创建连线样式 */
-  getNewEdgeStyle() {
+  getNewEdgeStyle(): Record<string, any> {
     const { graphModel } = this.props;
     const { anchorLine } = graphModel.theme;
-    return anchorLine;
+    return { ...anchorLine };
   }
   getAnchors() {
     const { model, graphModel, eventCenter } = this.props;
     const {
-      isSelected, activeAnchor, isHitable,
+      isSelected, isHitable,
     } = model;
     const { isHovered, isDraging } = this.state;
     if (isHitable && (isSelected || isHovered)) {
@@ -147,7 +148,6 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
             hoverStyle={hoverStyle}
             edgeStyle={edgeStyle}
             anchorIndex={index}
-            activeAnchor={activeAnchor}
             nodeModel={model}
             eventCenter={eventCenter}
             graphModel={graphModel}
@@ -160,6 +160,7 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
   /* 支持节点自定义文案样式 */
   getTextStyle() {
     const { graphModel } = this.props;
+    // 透传 nodeText
     const { nodeText } = graphModel.theme;
     return nodeText;
   }
@@ -243,41 +244,35 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
       x: e.clientX,
       y: e.clientY,
     });
-    // 两次点击间隔小于200ms， 认为是双击
-    // 节点点击事件推迟200ms触发，如果有双击则取消第一次点击事件触发
-    if (this.preStartTime && this.startTime - this.preStartTime < 200) {
-      if (this.clickTimer) { window.clearTimeout(this.clickTimer); }
+
+    const eventOptions = {
+      data: nodeData,
+      e,
+      position,
+    };
+
+    const isRightClick = e.button === 2;
+    // 这里 IE 11不能正确显示
+    const isDoubleClick = e.detail === 2;
+
+    // 判断是否有右击，如果有右击则取消点击事件触发
+    if (isRightClick) return;
+
+    // 不是双击的，默认都是单击
+    if (isDoubleClick) {
       const { editConfig } = graphModel;
       if (editConfig.nodeTextEdit && model.text.editable) {
         model.setSelected(false);
         graphModel.setElementStateById(model.id, ElementState.TEXT_EDIT);
       }
-      eventCenter.emit(EventType.NODE_DBCLICK, {
-        data: nodeData,
-        e,
-        position,
-      });
+      eventCenter.emit(EventType.NODE_DBCLICK, eventOptions);
     } else {
-      this.clickTimer = window.setTimeout(() => {
-        // 节点右击也会触发mouseup事件，判断是否有右击，如果有右击则取消点击事件触发
-        if (!this.contextMenuTime || this.startTime > this.contextMenuTime) {
-          eventCenter.emit(EventType.ELEMENT_CLICK, {
-            data: nodeData,
-            e,
-            position,
-          });
-          eventCenter.emit(EventType.NODE_CLICK, {
-            data: nodeData,
-            e,
-            position,
-          });
-        }
-      }, 400);
+      eventCenter.emit(EventType.ELEMENT_CLICK, eventOptions);
+      eventCenter.emit(EventType.NODE_CLICK, eventOptions);
     }
-    graphModel.toFront(model.id);
     const { editConfig: { metaKeyMultipleSelected } } = graphModel;
     graphModel.selectNodeById(model.id, e.metaKey && metaKeyMultipleSelected);
-    this.preStartTime = this.startTime;
+    graphModel.toFront(model.id);
   };
   handleContextMenu = (ev: MouseEvent) => {
     ev.preventDefault();
@@ -293,8 +288,8 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
       y: ev.clientY,
     });
     graphModel.setElementStateById(model.id, ElementState.SHOW_MENU, position.domOverlayPosition);
-    graphModel.toFront(model.id);
     graphModel.selectNodeById(model.id);
+    graphModel.toFront(model.id);
     eventCenter.emit(EventType.NODE_CONTEXTMENU, {
       data: nodeData,
       e: ev,
@@ -309,6 +304,8 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
   };
   // 不清楚以前为啥要把hover状态放到model中，先改回来。
   setHoverON = (ev) => {
+    const { isHovered } = this.state;
+    if (isHovered) return;
     this.setState({
       isHovered: true,
     });
@@ -331,6 +328,11 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
       data: nodeData,
       e: ev,
     });
+  };
+  onMouseOut = (ev) => {
+    if (isIe) {
+      this.setHoverOFF(ev);
+    }
   };
   render() {
     const { model, graphModel } = this.props;
@@ -370,7 +372,9 @@ export default abstract class BaseNode extends Component<IProps, Istate> {
           onMouseDown={this.handleMouseDown}
           onMouseUp={this.handleClick}
           onMouseEnter={this.setHoverON}
+          onMouseOver={this.setHoverON}
           onMouseLeave={this.setHoverOFF}
+          onMouseOut={this.onMouseOut}
           onContextMenu={this.handleContextMenu}
         >
           { nodeShapeInner }

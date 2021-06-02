@@ -32,16 +32,40 @@ const guide = [
     collapsable: false,
     children: [
       'extension/extension-intro',
-      'extension/extension-components',
-      'extension/bpmn-element',
       'extension/snapshot',
       'extension/adapter',
+      'extension/bpmn-element',
+      'extension/extension-node-resize',
+      {
+        title: '组件',
+        collapsable: true,
+        children: [
+          'extension/extension-components',
+          'extension/component-control',
+          'extension/component-menu',
+          'extension/component-dnd-panel',
+          'extension/component-selection',
+          'extension/component-minimap',
+          'extension/component-custom'
+        ]
+      },
     ]
   }
 ];
 
 const api = [
   'logicFlowApi',
+  {
+    title: 'Model',
+    collapsable: false,
+    children: [
+      'graphModelApi',
+      'baseNodeModelApi',
+      'baseEdgeModelApi',
+      'transformModelApi',
+      'editConfigModelApi',
+    ]
+  },
   {
     title: '元素',
     collapsable: false,
@@ -64,28 +88,46 @@ const usage = ["bpmn", "approve"];
 
 const article = [
   'article01',
+  'article02',
+  'article03',
+  'NodeResize'
+];
+
+const verisonInfo = [
+  '0.3.0',
+  '0.4.0'
 ];
 
 module.exports = {
-  title: 'Logic Flow',
-  description: 'Logic Flow desc',
+  title: 'LogicFlow',
+  description: 'LogicFlow desc',
+  head: [['link', { rel: 'icon', href: '/new-logo.svg' }]],
+  plugins: ['@vuepress-reco/vuepress-plugin-back-to-top'],
   themeConfig: {
     sidebarDepth: 1,
-    logo: '/logo.png',
+    logo: '/horizontal-logo.png',
     displayAllHeaders: false,
-    sidebar: [],
+    smoothScroll: true,
+    search: true,
+    lastUpdated: '最后更新时间',
+    repo: 'https://github.com/didi/LogicFlow',
+    docsDir: 'docs',
+    editLinks: true,
+    editLinkText: '在 Github 上改善此页',
     nav: [
-      {text: '教程', link: '/guide/start'},
-      {text: 'API', link: '/api/logicFlowApi'},
-      {text: '示例', link: '/usage/bpmn'},
-      {text: '文章', link: '/article/article01'},
-      { text: 'Github', link: 'https://github.com/didi/LogicFlow' },
+      { text: '教程', link: '/guide/start' },
+      { text: 'API', link: '/api/logicFlowApi' },
+      { text: '示例', link: '/usage/bpmn' },
+      { text: '常见问题', link: '/FAQ' },
+      { text: '版本公告', link: '/version-info/0.3.0' },
+      { text: '文章', link: '/article/article01' },
     ],
     sidebar: {
       '/guide/': guide,
+      '/version-info/': verisonInfo,
       '/api/': api,
       '/usage/': usage,
       '/article/': article,
-    }
-  }
-}
+    },
+  },
+};

@@ -6,9 +6,19 @@ import BaseText from './BaseText';
 import { getBytesLength } from '../../util/edge';
 
 export default class LineText extends BaseText {
+  constructor(config) {
+    super(config);
+    this.state = {
+      isHoverd: false,
+    };
+  }
   getBackgroud() {
     const { model: { text }, style } = this.props;
-    const backgroundStyle = pick(style.background, 'fill', 'stroke', 'radius');
+    let backgroundStyle = pick(style.background, 'fill', 'stroke', 'radius', 'height');
+    const { isHoverd } = this.state;
+    if (isHoverd && style.hoverBackground) {
+      backgroundStyle = { ...backgroundStyle, ...style.hoverBackground };
+    }
     // 存在文本并且文本背景不为透明时计算背景框
     if (text && text.value && backgroundStyle.fill !== 'transparnet') {
       const { fontSize } = style;
@@ -27,26 +37,39 @@ export default class LineText extends BaseText {
       const rectAttr = {
         x: x - 1,
         y: y - 1,
-        width: Math.ceil(longestBytes / 2) * fontSize + 2,
-        height: rowsLength * (fontSize + 2) + 2,
+        width: Math.ceil(longestBytes / 2) * fontSize + fontSize / 4,
+        height: rowsLength * (fontSize + 2) + fontSize / 4,
         ...backgroundStyle,
       };
       return <Rect {...rectAttr} />;
     }
   }
+  setHoverON = () => {
+    this.setState({
+      isHoverd: true,
+    });
+  };
+  setHoverOFF = () => {
+    this.setState({
+      isHoverd: false,
+    });
+  };
   getShape() {
     const { model: { text }, style } = this.props;
     const { value, x, y } = text;
-    const textStyle = pick(style, 'color', 'fontSize', 'fontWeight', 'fontFamily');
     const attr = {
       x,
       y,
       className: 'lf-element-text',
       value,
-      ...textStyle,
+      ...style, // 透传 edageText 属性, 如 color fontSize fontWeight fontFamily textAnchor 等
     };
     return (
-      <g className="lf-line-text">
+      <g
+        className="lf-line-text"
+        onMouseEnter={this.setHoverON}
+        onMouseLeave={this.setHoverOFF}
+      >
         {this.getBackgroud()}
         <Text {...attr} />
       </g>

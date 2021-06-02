@@ -1,7 +1,7 @@
 import { h } from 'preact';
 import Rect from '../basic-shape/Rect';
 import BaseNode from './BaseNode';
-import { RectNodeModel } from '../../LogicFlow';
+import { RectNodeModel } from '../../model';
 import GraphModel from '../../model/GraphModel';
 import EventEmitter from '../../event/eventEmitter';
 
@@ -12,21 +12,12 @@ type IProps = {
 };
 
 export default class RectNode extends BaseNode {
-  radius: number;
-  constructor(props: IProps) {
-    super(props);
-    const {
-      model: {
-        radius,
-      },
-    } = props as IProps;
-    this.radius = radius;
-  }
   getShapeStyle() {
     const attributes = super.getShapeStyle();
+    const { model: { radius } } = this.props as IProps;
     return {
       ...attributes,
-      radius: this.radius,
+      radius,
     };
   }
   getAttributes() {

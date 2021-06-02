@@ -1,7 +1,8 @@
+import { pick } from 'lodash-es';
 import LineEdgeModel from '../model/edge/LineEdgeModel';
 import PolylineEdgeModel from '../model/edge/PolylineEdgeModel';
 import BaseNode from '../model/node/BaseNodeModel';
-import { Point, Direction } from '../type/index';
+import { Point, Direction, EdgeConfig } from '../type/index';
 import { getCorssPointOfLine, isInSegment } from '../algorithm/edge';
 import { SegmentDirection } from '../constant/constant';
 import {
@@ -829,4 +830,36 @@ export const getClosestPointOfPolyline = (point: Point, points: string): Point =
     };
   }
   return crossPoint;
+};
+
+// 规范连线初始化数据
+export const pickEdgeConfig = (data): EdgeConfig => pick(data, [
+  'id',
+  'type',
+  'sourceNodeId',
+  'targetNodeId',
+  'pointsList',
+  'startPoint',
+  'endPoint',
+  'text',
+  'properties',
+]);
+
+type Position = {
+  x: number;
+  y: number;
+};
+
+// eslint-disable-next-line arrow-body-style
+export const twoPointDistance = (source: Position, target: Position) => {
+  // fix: 修复坐标存在负值时计算错误的问题。
+  // const source = {
+  //   x: p1.x,
+  //   y: Math.abs(p1.y),
+  // };
+  // const target = {
+  //   x: Math.abs(p2.x),
+  //   y: Math.abs(p2.y),
+  // };
+  return Math.sqrt((source.x - target.x) ** 2 + (source.y - target.y) ** 2);
 };

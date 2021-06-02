@@ -1,12 +1,12 @@
 {
   "name": "examples",
-  "version": "0.3.9",
+  "version": "0.5.12",
   "private": true,
   "dependencies": {
     "@ant-design/icons": "^4.3.0",
     "@babel/core": "7.12.3",
-    "@logicflow/core": "^0.2.9",
-    "@logicflow/extension": "^0.2.9",
+    "@logicflow/core": "^0.4.11",
+    "@logicflow/extension": "^0.4.12",
     "@pmmmwh/react-refresh-webpack-plugin": "0.4.2",
     "@svgr/webpack": "5.4.0",
     "@testing-library/jest-dom": "^5.11.4",
@@ -82,7 +82,7 @@
   },
   "scripts": {
     "start": "node scripts/start.js",
-    "build": "PUBLIC_URL='./' node scripts/build.js",
+    "build": "cross-env PUBLIC_URL='./' node scripts/build.js",
     "test": "node scripts/test.js"
   },
   "eslintConfig": {
@@ -159,5 +159,8 @@
     "presets": [
       "react-app"
     ]
+  },
+  "devDependencies": {
+    "rimraf": "^3.0.2"
   }
 }

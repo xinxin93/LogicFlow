@@ -8,8 +8,9 @@ import {
   ElementState, ModelType, ElementType,
 } from '../../constant/constant';
 import {
-  AdditionData, NodeData, MenuConfig, NodeAttribute,
+  AdditionData, NodeData, NodeAttribute, NodeConfig,
 } from '../../type';
+import GraphModel from '../GraphModel';
 import { IBaseModel } from '../BaseModel';
 import { formatData } from '../../util/compatible';
 import { pickNodeConfig } from '../../util/node';
@@ -47,17 +48,32 @@ export default class BaseNodeModel implements IBaseModel {
   readonly BaseType = ElementType.NODE;
   modelType = ModelType.NODE;
   additionStateData: AdditionData;
-  menu?: MenuConfig[];
+  [propName: string]: any; // 支持自定义
   targetRules: ConnectRule[] = [];
   sourceRules: ConnectRule[] = [];
   hasSetTargetRules = false; // 用来限制rules的重复值
   hasSetSourceRules = false; // 用来限制rules的重复值
-  @observable properties = {};
+  @observable properties: Record<string, any> = {};
   @observable type = '';
   @observable x = defaultConfig.x;
   @observable y = defaultConfig.y;
-  @observable width = defaultConfig.width;
-  @observable height = defaultConfig.height;
+  @observable
+  private _width = defaultConfig.width;
+  graphModel: GraphModel;
+  public get width() {
+    return this._width;
+  }
+  public set width(value) {
+    this._width = value;
+  }
+  @observable
+  private _height = defaultConfig.height;
+  public get height() {
+    return this._height;
+  }
+  public set height(value) {
+    this._height = value;
+  }
   @observable fill = defaultConfig.fill;
   @observable fillOpacity = defaultConfig.fillOpacity;
   @observable strokeWidth = defaultConfig.strokeWidth;
@@ -71,19 +87,24 @@ export default class BaseNodeModel implements IBaseModel {
   @observable isSelected = false;
   @observable isHovered = false;
   @observable isHitable = true; // 细粒度控制节点是否对用户操作进行反应
-  @observable isContextMenu = false;
   @observable zIndex = defaultConfig.zIndex;
-  @observable anchors = [];
-  @observable activeAnchor = -1;
+  @observable anchorsOffset = []; // 根据与(x, y)的偏移量计算anchors的坐标
   @observable state = 1;
   @observable text = defaultConfig.text;
   @observable draggable = true;
 
-  constructor(data) {
-    this.formatText(data);
+  constructor(data: NodeConfig, graphModel: GraphModel, type) {
+    this.graphModel = graphModel;
+    this.setStyleFromTheme(type, graphModel);
+    this.initNodeData(data);
+    this.setAttributes();
+  }
+
+  initNodeData(data) {
     if (!data.properties) {
       data.properties = {};
     }
+    this.formatText(data);
     assign(this, pickNodeConfig(data));
   }
 
@@ -110,6 +131,8 @@ export default class BaseNodeModel implements IBaseModel {
       data.text.editable = true;
     }
   }
+
+  setAttributes() {}
 
   /**
    * 保存时获取的数据
@@ -200,6 +223,26 @@ export default class BaseNodeModel implements IBaseModel {
     return this.targetRules;
   }
 
+  getAnchorsByOffset() {
+    const {
+      anchorsOffset, x, y,
+    } = this;
+    return anchorsOffset.map((el) => ({
+      x: x + el[0],
+      y: y + el[1],
+    }));
+  }
+
+  get anchors() {
+    const {
+      anchorsOffset,
+    } = this;
+    if (anchorsOffset && anchorsOffset.length > 0) {
+      return this.getAnchorsByOffset();
+    }
+    return [];
+  }
+
   @action
   move(deltaX, deltaY): void {
     this.x += deltaX;
@@ -257,19 +300,9 @@ export default class BaseNodeModel implements IBaseModel {
   }
 
   @action
-  setAnchorActive(index: number): void {
-    this.activeAnchor = index;
-  }
-
-  @action
   setElementState(state: ElementState, additionStateData?: AdditionData): void {
     this.state = state;
     this.additionStateData = additionStateData;
-  }
-
-  @action
-  showMenu(flag = true): void {
-    this.isContextMenu = flag;
   }
 
   @action
@@ -325,5 +358,10 @@ export default class BaseNodeModel implements IBaseModel {
   @action
   setZIndex(zindex: number = defaultConfig.zIndex): void {
     this.zIndex = zindex;
+  }
+
+  @action
+  updateAttributes(attributes) {
+    assign(this, attributes);
   }
 }

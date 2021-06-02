@@ -1,5 +1,8 @@
 import { get } from 'lodash-es';
-import LogicFlow, { BaseNodeModel } from '../../LogicFlow';
+import { EventType } from '../../constant/constant';
+// import LogicFlow, { BaseNodeModel } from '../../LogicFlow';
+import LogicFlow from '../../LogicFlow';
+import { BaseNodeModel } from '../../model';
 import { TextConfig } from '../../type';
 import { snapToGrid } from '../../util/geometry';
 
@@ -42,7 +45,7 @@ export default class Dnd {
     window.document.removeEventListener('mouseup', this.stopDrag);
   };
   dragEnter = (e) => {
-    if (!this.nodeConfig) return;
+    if (!this.nodeConfig || this.fakerNode) return;
     this.fakerNode = this.lf.createFakerNode({
       ...this.nodeConfig,
       ...this.clientToLocalPoint({ x: e.clientX, y: e.clientY }),
@@ -69,7 +72,7 @@ export default class Dnd {
     if (!this.lf.graphModel || !e || !this.nodeConfig) {
       return;
     }
-    this.lf.addNode({
+    const currentNode = this.lf.addNode({
       ...this.nodeConfig,
       ...this.clientToLocalPoint({ x: e.clientX, y: e.clientY }),
     });
@@ -79,13 +82,17 @@ export default class Dnd {
     this.lf.removeNodeSnapLine();
     this.lf.graphModel.removeFakerNode();
     this.fakerNode = null;
+    const nodeData = currentNode.getData();
+    this.lf.eventCenter.emit(EventType.NODE_DND_ADD, { data: nodeData });
   };
 
   eventMap() {
     return {
       onMouseEnter: this.dragEnter,
+      onMouseOver: this.dragEnter, // IE11
       onMouseMove: this.onDragOver,
       onMouseLeave: this.onDragLeave,
+      // onMouseOut: this.onDragLeave, // IE11
       onMouseUp: this.onDrop,
     };
   }

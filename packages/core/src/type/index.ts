@@ -1,4 +1,4 @@
-import mobx from 'mobx';
+// import mobx from 'mobx';
 import { h } from 'preact';
 import LogicFlow from '../LogicFlow';
 import BaseEdge from '../view/edge/BaseEdge';
@@ -21,6 +21,7 @@ import PolylineEdge from '../view/edge/PolylineEdge';
 import PolylineEdgeModel from '../model/edge/PolylineEdgeModel';
 import EllipseNode from '../view/node/EllipseNode';
 import EllipseNodeModel from '../model/node/EllipseNodeModel';
+import * as Options from '../options';
 
 export type PointTuple = [number, number];
 
@@ -39,6 +40,12 @@ export type TextConfig = {
   value: string;
 } & Point;
 
+export type GraphConfigData = {
+  nodes: NodeConfig[],
+  edges: EdgeConfig[],
+};
+
+// 节点数据属性
 export type NodeConfig = {
   id?: string;
   type: string;
@@ -57,14 +64,13 @@ export type NodeData = {
   ry?: number;
   text?: TextConfig;
   properties: Record<string, unknown>;
-  baseType?: 'node' | 'edge' | 'graph'; // todo: 问一下为啥这里要导出baseType
 };
 // 修改节点数据的参数
 export type NodeAttribute = {
   id: string;
   type?: string;
   x?: number;
-  y: number;
+  y?: number;
   text?: TextConfig;
   properties?: Record<string, unknown>;
 };
@@ -129,6 +135,7 @@ export type EdgeConfig = {
   properties?: Record<string, unknown>;
 };
 
+// 节点样式属性
 export type CommonStyle = {
   fill?: string,
   stroke?: string,
@@ -175,6 +182,7 @@ export type AnchorHoverStyle = {
 export type EdgeStyle = {
   stroke?: string,
   strokeWidth?: number,
+  strokeDashArray?: string,
   hoverStroke?: string,
   selectedStroke?: string,
   outlineColor?: string,
@@ -201,6 +209,11 @@ export type TextStyle = {
 export type NodeTextStyle = TextStyle;
 export type EdgeTextStyle = TextStyle & {
   background?: {
+    fill?: string,
+    stroke?: string,
+    radius?: number,
+  },
+  hoverBackground?: {
     fill?: string,
     stroke?: string,
     radius?: number,
@@ -237,7 +250,6 @@ export type GraphTransform = {
 export type EventArgs = Record<string, number | object | string>;
 
 export type FocusOnArgs = {
-  type?: string;
   id?: string;
   coordinate?: {
     x: number,
@@ -247,8 +259,11 @@ export type FocusOnArgs = {
 
 export type ComponentRender = (lf: LogicFlow, container: HTMLElement) => void;
 export interface Extension {
-  install: (lf: LogicFlow) => void;
+  name: string; // 插件名称，之后用于插件覆盖和细粒度控制加载那些插件
+  install?: (lf: LogicFlow, LogicFlow: LogicFlowContractor) => void;
   render?: ComponentRender;
+  destroy?: () => void;
+  [props: string]: any;
 }
 
 export type Direction = 'vertical' | 'horizontal';
@@ -276,13 +291,25 @@ export interface ModelContractor {
   new(data, graphModel): unknown; // todo: 这里应该怎么写？
 }
 
+export interface LogicFlowContractor {
+  new(option: Options.Definition): LogicFlow;
+}
+
+export interface ExtensionContractor {
+  new({
+    lf: LogicFlow,
+    LogicFlow: LogicFlowContractor,
+  });
+  render?: Function;
+}
+
 export type RegisterBack = {
   view: Function;
   model: Function;
 };
 
 export interface RegisterParam {
-  mobx: typeof mobx;
+  // mobx: typeof mobx;
   h: typeof h;
   BaseEdge: typeof BaseEdge;
   BaseEdgeModel: typeof BaseEdgeModel;
@@ -308,3 +335,10 @@ export interface RegisterParam {
 }
 
 export type RegisterElementFn = (params: RegisterParam) => RegisterBack;
+
+export type RegisterConfig = {
+  type: string;
+  view: any;
+  model: any;
+  isObserverView?: boolean;
+};

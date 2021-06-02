@@ -17,6 +17,7 @@ import { snapToGrid, getGridOffset } from '../util/geometry';
 import { isPointInArea } from '../util/graph';
 import { getClosestPointOfPolyline } from '../util/edge';
 import { formatData } from '../util/compatible';
+import { getNodeAnchorPosition } from '../util/node';
 
 type BaseNodeModelId = string; // 节点ID
 type BaseEdgeModelId = string; // 连线ID
@@ -87,7 +88,11 @@ class GraphModel {
   }
   // fixme: 用户点击触发两次sortElements
   @computed get sortElements() {
-    const elements = [...this.edges, ...this.nodes];
+    let elements = [];
+    // IE BUG: mobx observer对象使用解构会导致IE11出现问题
+    this.nodes.forEach(node => elements.push(node));
+    this.edges.forEach(edge => elements.push(edge));
+    elements = elements.sort((a, b) => a.zIndex - b.zIndex);
     // 只显示可见区域的节点和连线以及和这个可以区域节点的节点
     const showElements = [];
     let topElementIdx = -1;
@@ -125,7 +130,10 @@ class GraphModel {
    */
   getAreaElement(leftTopPoint, rightBottomPoint) {
     const selectElements = [];
-    const elements = [...this.edges, ...this.nodes];
+    const elements = [];
+    // IE BUG: mobx observer对象使用解构会导致IE11出现问题
+    this.nodes.forEach(node => elements.push(node));
+    this.edges.forEach(edge => elements.push(edge));
     for (let i = 0; i < elements.length; i++) {
       const currentItem = elements[i];
       if (this.isElementInArea(currentItem, leftTopPoint, rightBottomPoint)) {
@@ -244,10 +252,7 @@ class GraphModel {
   }
 
   getEdgeModel(edgeId: string) {
-    const edge = this.edgesMap[edgeId];
-    if (edge) {
-      return edge.model;
-    }
+    return this.edgesMap[edgeId]?.model;
   }
 
   getElement(id: string): IBaseModel | undefined {
@@ -259,9 +264,23 @@ class GraphModel {
     return edgeModel;
   }
 
+  getNodeEdges(nodeId): BaseEdgeModel[] {
+    const edges = [];
+    for (let i = 0; i < this.edges.length; i++) {
+      const edgeModel = this.edges[i];
+      const nodeAsSource = this.edges[i].sourceNodeId === nodeId;
+      const nodeAsTarget = this.edges[i].targetNodeId === nodeId;
+      if (nodeAsSource || nodeAsTarget) {
+        edges.push(edgeModel);
+      }
+    }
+    return edges;
+  }
+
   /**
    * 获取选中的元素数据
-   * @param isIgnoreCheck 是否包括sourceNode和targetNode没有被选中的连线。默认包括。复制的时候不能包括此类连线
+   * @param isIgnoreCheck 是否包括sourceNode和targetNode没有被选中的连线,默认包括。
+   * 复制的时候不能包括此类连线, 因为复制的时候不允许悬空的连线
    */
   getSelectElements(isIgnoreCheck = true) {
     const elements = this.selectElements;
@@ -278,12 +297,17 @@ class GraphModel {
         const isNodeSelected = elements.get(edgeData.sourceNodeId)
           && elements.get(edgeData.targetNodeId);
 
-        if (!isIgnoreCheck || isNodeSelected) {
+        if (isIgnoreCheck || isNodeSelected) {
           graphData.edges.push(edgeData);
         }
       }
     });
     return graphData;
+  }
+
+  updateAttributes(id: string, attributes: object) {
+    const element = this.getElement(id);
+    element.updateAttributes(attributes);
   }
 
   @action
@@ -316,12 +340,6 @@ class GraphModel {
   }
 
   @action
-  showMenu(id) {
-    this.nodes.forEach((node) => node.showMenu(node.id === id));
-    // this.edges.forEach((edge) => edge.showMenu(edge.id === id));
-  }
-
-  @action
   deleteNode(id) {
     const nodeData = this.nodesMap[id].model.getData();
     this.removeEdgeBySource(id);
@@ -338,6 +356,9 @@ class GraphModel {
       delete nodeOriginData.id;
     }
     const Model = this.getModel(nodeOriginData.type);
+    if (!Model) {
+      throw new Error(`找不到${nodeOriginData.type}对应的节点，请确认是否已注册此类型节点。`);
+    }
     // TODO 元素的 model 不应该直接可以操作 graphModel 的属性，但可以调方法
     const nodeModel = new Model(nodeOriginData, this);
     this.nodes.push(nodeModel);
@@ -375,7 +396,12 @@ class GraphModel {
   @action
   moveNode(nodeId: BaseNodeModelId, deltaX: number, deltaY: number) {
     // 1) 移动节点
-    const nodeModel = this.nodesMap[nodeId].model;
+    const node = this.nodesMap[nodeId];
+    if (!node) {
+      console.warn(`不存在id为${nodeId}的节点`);
+      return;
+    }
+    const nodeModel = node.model;
     nodeModel.move(deltaX, deltaY);
     // 2) 移动连线
     this.moveEdge(nodeId, deltaX, deltaY);
@@ -398,10 +424,13 @@ class GraphModel {
       delete edgeOriginData.id;
     }
     const Model = this.getModel(type);
+    if (!Model) {
+      throw new Error(`找不到${type}对应的连线，请确认是否已注册此类型连线。`);
+    }
     const edgeModel = new Model({ ...edgeOriginData, type }, this);
     const edgeData = edgeModel.getData();
-    this.eventCenter.emit(EventType.EDGE_ADD, { data: edgeData });
     this.edges.push(edgeModel);
+    this.eventCenter.emit(EventType.EDGE_ADD, { data: edgeData });
     return edgeModel;
   }
 
@@ -456,6 +485,11 @@ class GraphModel {
   @action
   removeEdgeById(id) {
     const idx = this.edgesMap[id].index;
+    const edge = this.edgesMap[id];
+    if (!edge) {
+      console.warn(`不存在id为${id}的边`);
+      return;
+    }
     const edgeData = this.edgesMap[id].model.getData();
     this.edges.splice(idx, 1);
     this.eventCenter.emit(EventType.EDGE_DELETE, { data: edgeData });
@@ -567,7 +601,7 @@ class GraphModel {
   @action
   clearSelectElements() {
     this.selectElements.forEach(element => {
-      element.setSelected(false);
+      element?.setSelected(false);
     });
     this.selectElements.clear();
     this.topElement?.setZIndex();
@@ -591,9 +625,54 @@ class GraphModel {
   changeEdgeType(type: string): void {
     this.edgeType = type;
   }
+  @action
+  changeNodeType(id, type: string): void {
+    const nodeModel = this.getNodeModel(id);
+    if (!nodeModel) {
+      console.warn(`找不到id为${id}的节点`);
+      return;
+    }
+    const data = nodeModel.getData();
+    data.type = type;
+    const Model = this.getModel(type);
+    if (!Model) {
+      throw new Error(`找不到${type}对应的节点，请确认是否已注册此类型节点。`);
+    }
+    const newNodeModel = new Model(data, this);
+    this.nodes.splice(this.nodesMap[id].index, 1, newNodeModel);
+    // 微调连线
+    const edgeModels = this.getNodeEdges(id);
+    edgeModels.forEach(edge => {
+      if (edge.sourceNodeId === id) {
+        const point = getNodeAnchorPosition(
+          newNodeModel,
+          edge.startPoint,
+          newNodeModel.width,
+          newNodeModel.height,
+        );
+        edge.updateStartPoint(point);
+      }
+      if (edge.targetNodeId === id) {
+        const point = getNodeAnchorPosition(
+          newNodeModel,
+          edge.endPoint,
+          newNodeModel.width,
+          newNodeModel.height,
+        );
+        edge.updateEndPoint(point);
+      }
+    });
+  }
+
   /* 设置主题 */
   @action setTheme(style: Style) {
     this.theme = updateTheme({ ...this.theme, ...style });
+  }
+  // 清空数据
+  @action
+  clearData(): void {
+    this.nodes = [];
+    this.edges = [];
   }
 }
 

@@ -7,13 +7,19 @@ import { getAnchors } from '../../util/node';
 import { IBaseModel } from '../BaseModel';
 import GraphModel from '../GraphModel';
 import {
-  Point, AdditionData, EdgeAttribute, EdgeData, MenuConfig,
+  Point,
+  AdditionData,
+  EdgeAttribute,
+  EdgeData,
+  MenuConfig,
+  EdgeConfig,
 } from '../../type/index';
 import {
   ElementState, ModelType, ElementType,
 } from '../../constant/constant';
 import { defaultTheme } from '../../constant/DefaultTheme';
 import { formatData } from '../../util/compatible';
+import { pickEdgeConfig, twoPointDistance } from '../../util/edge';
 
 const defaultData = {
   sourceNodeId: '',
@@ -52,6 +58,7 @@ class BaseEdgeModel implements IBaseModel {
   @observable endPoint = defaultData.endPoint;
   @observable strokeWidth = defaultData.strokeWidth;
   @observable stroke = defaultData.stroke;
+  @observable strokeDashArray = defaultData.strokeDashArray;
   @observable outlineColor = defaultData.outlineColor;
   @observable outlineStrokeDashArray = defaultData.outlineStrokeDashArray;
   @observable strokeOpacity = defaultData.strokeOpacity;
@@ -64,23 +71,30 @@ class BaseEdgeModel implements IBaseModel {
   @observable points = defaultData.points;
   @observable pointsList = defaultData.pointsList;
   @observable draggable = true;
-  constructor(data, graphModel: GraphModel) {
-    // todo: 规范所有的初始化参数
-    assign(this, pick(data, [
-      'id',
-      'type',
-      'sourceNodeId',
-      'targetNodeId',
-      'pointsList',
-      'startPoint',
-      'endPoint',
-      'properties',
-    ]));
-    if (data.text) {
-      this.text = data.text;
-    }
+
+  constructor(data: EdgeConfig, graphModel: GraphModel, type) {
     this.graphModel = graphModel;
+    this.setStyleFromTheme(type, graphModel);
+    this.initEdgeData(data);
+    this.setAttributes();
+    // 设置连线的 anchors，也就是连线的两个端点
+    // 端点依赖于 edgeData 的 sourceNode 和 targetNode
+    this.setAnchors();
+    // 连线的拐点依赖于两个端点
+    this.initPoints();
+    // 文本位置依赖于连线上的所有拐点
+    this.formatText(data);
   }
+
+  initEdgeData(data) {
+    if (!data.properties) {
+      data.properties = {};
+    }
+    assign(this, pickEdgeConfig(data));
+  }
+
+  setAttributes() { }
+
   @computed get sourceNode() {
     return this.graphModel?.nodesMap[this.sourceNodeId]?.model;
   }
@@ -93,45 +107,42 @@ class BaseEdgeModel implements IBaseModel {
       y: 0,
     };
   }
+
   move() { }
 
   /* 获取起点 */
   getBeginAnchor(sourceNode, targetNode): Point {
-    const sourceAnchors = getAnchors(sourceNode);
     let position;
-    if (sourceNode.y >= targetNode.y + targetNode.height) {
-      // 上方
-      [position] = sourceAnchors;
-    } else if (sourceNode.y + sourceNode.height <= targetNode.y) {
-      // 下方
-      [, , position] = sourceAnchors;
-    } else if (sourceNode.x >= targetNode.x) {
-      // 左边
-      [, , , position] = sourceAnchors;
-    } else {
-      // 右边
-      [, position] = sourceAnchors;
-    }
+    let minDistance;
+    const sourceAnchors = getAnchors(sourceNode);
+    sourceAnchors.forEach((anchor) => {
+      const distance = twoPointDistance(anchor, targetNode);
+      if (!minDistance) {
+        minDistance = distance;
+        position = anchor;
+      } else if (distance < minDistance) {
+        minDistance = distance;
+        position = anchor;
+      }
+    });
     return position;
   }
 
   /* 获取终点 */
-  getEndAnchor(sourceNode, targetNode): Point {
-    const targetAnchors = getAnchors(targetNode);
+  getEndAnchor(targetNode): Point {
     let position;
-    if (targetNode.y >= sourceNode.y + sourceNode.height) {
-      // 上方
-      [position] = targetAnchors;
-    } else if (targetNode.y + targetNode.height <= sourceNode.y) {
-      // 下方
-      [, , position] = targetAnchors;
-    } else if (targetNode.x >= sourceNode.x) {
-      // 左边
-      [, , , position] = targetAnchors;
-    } else {
-      // 右边
-      [, position] = targetAnchors;
-    }
+    let minDistance;
+    const targetAnchors = getAnchors(targetNode);
+    targetAnchors.forEach((anchor) => {
+      const distance = twoPointDistance(anchor, this.startPoint);
+      if (!minDistance) {
+        minDistance = distance;
+        position = anchor;
+      } else if (distance < minDistance) {
+        minDistance = distance;
+        position = anchor;
+      }
+    });
     return position;
   }
 
@@ -146,8 +157,8 @@ class BaseEdgeModel implements IBaseModel {
       type: this.type,
       sourceNodeId: this.sourceNode.id,
       targetNodeId: this.targetNode.id,
-      startPoint: { ...this.startPoint },
-      endPoint: { ...this.endPoint },
+      startPoint: Object.assign({}, this.startPoint),
+      endPoint: Object.assign({}, this.endPoint),
       properties: toJS(this.properties),
     };
     if (value) {
@@ -197,12 +208,12 @@ class BaseEdgeModel implements IBaseModel {
       };
       const textPostion = this.textPosition;
       if (!x && !y) {
-        edgeData.text = { ...text, ...textPostion };
+        edgeData.text = Object.assign({}, text, textPostion);
       } else {
-        edgeData.text = { ...text, x, y };
+        edgeData.text = Object.assign({}, text, { x, y });
       }
     } else if (typeof edgeData.text === 'object') {
-      const text = { ...this.text, ...edgeData.text };
+      const text = Object.assign({}, this.text, edgeData.text);
       edgeData.text = pick(text, 'x', 'y', 'value', 'draggable', 'editable');
     }
     assign(this, edgeData);
@@ -213,15 +224,16 @@ class BaseEdgeModel implements IBaseModel {
     // 暂时处理，只传入text的情况
     const { x, y } = this.textPosition;
     if (!data.text) {
-      data.text = {
+      this.text = {
         value: '',
         x,
         y,
         draggable: false,
         editable: true,
       };
+      return;
     }
-    if (data.text && typeof data.text === 'string') {
+    if (typeof data.text === 'string') {
       this.text = {
         value: data.text || '',
         x,
@@ -229,8 +241,16 @@ class BaseEdgeModel implements IBaseModel {
         draggable: false,
         editable: true,
       };
-    } else if (data.text && data.text.editable === undefined) {
-      this.text.editable = true;
+      return;
+    }
+    if (Object.prototype.toString.call(data.text) === '[object Object]') {
+      this.text = {
+        x: data.text.x || x,
+        y: data.text.y || y,
+        value: data.text.value,
+        draggable: this.text.draggable,
+        editable: this.text.editable,
+      };
     }
   }
 
@@ -285,7 +305,7 @@ class BaseEdgeModel implements IBaseModel {
       this.startPoint = position;
     }
     if (!this.endPoint) {
-      const position = this.getEndAnchor(this.sourceNode, this.targetNode);
+      const position = this.getEndAnchor(this.targetNode);
       this.endPoint = position;
     }
   }
@@ -342,6 +362,14 @@ class BaseEdgeModel implements IBaseModel {
   @action
   setZIndex(zindex: number = defaultData.zIndex): void {
     this.zIndex = zindex;
+  }
+
+  @action
+  initPoints() {}
+
+  @action
+  updateAttributes(attributes) {
+    assign(this, attributes);
   }
 }
 

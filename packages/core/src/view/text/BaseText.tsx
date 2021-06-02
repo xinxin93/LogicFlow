@@ -13,20 +13,23 @@ type IProps = {
   draggable: boolean;
   editable: boolean;
 };
+type IState = {
+  isHoverd: boolean;
+};
 
-export default class BaseText extends Component<IProps> {
+export default class BaseText extends Component<IProps, IState> {
   dragHandler: (ev: MouseEvent) => void;
   sumDeltaX = 0;
   sumDeltaY = 0;
   stepDrag: StepDrag;
   constructor(config) {
     super();
-    const { model } = config;
+    const { model, draggable } = config;
     this.stepDrag = new StepDrag({
       onDraging: this.onDraging,
       step: 1,
       model,
-      isStopPropagation: false,
+      isStopPropagation: draggable,
     });
   }
   getShape() {

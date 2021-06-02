@@ -2,9 +2,8 @@ import { h } from 'preact';
 import BaseNode from './BaseNode';
 import EventEmitter from '../../event/eventEmitter';
 import GraphModel from '../../model/GraphModel';
-import { PolygonNodeModel } from '../../LogicFlow';
+import { PolygonNodeModel } from '../../model';
 import Polygon from '../basic-shape/Polygon';
-import { PointTuple } from '../../type';
 
 type IProps = {
   model: PolygonNodeModel;
@@ -13,21 +12,12 @@ type IProps = {
 };
 
 export default class PolygonNode extends BaseNode {
-  points: PointTuple[];
-  constructor(props: IProps) {
-    super(props);
-    const {
-      model: {
-        points,
-      },
-    } = props as IProps;
-    this.points = points;
-  }
   getShapeStyle() {
     const attributes = super.getShapeStyle();
+    const { model: { points } } = this.props as IProps;
     return {
       ...attributes,
-      points: this.points,
+      points,
     };
   }
   getAttributes() {

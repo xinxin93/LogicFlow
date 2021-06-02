@@ -26,6 +26,7 @@ export default class BaseEdge extends Component<IProps> {
       model: {
         strokeWidth,
         strokeOpacity,
+        strokeDashArray,
         isSelected,
         isHovered,
         hoverStroke,
@@ -48,6 +49,7 @@ export default class BaseEdge extends Component<IProps> {
       stroke,
       strokeWidth,
       strokeOpacity,
+      strokeDashArray,
       isSelected,
       isHovered,
       hoverStroke,
@@ -175,6 +177,7 @@ export default class BaseEdge extends Component<IProps> {
     e.stopPropagation();
     this.startTime = new Date().getTime();
   };
+  // todo: 去掉setTimeout
   handleMouseUp = (e: MouseEvent) => {
     if (!this.startTime) return;
     const time = new Date().getTime() - this.startTime;
@@ -225,9 +228,9 @@ export default class BaseEdge extends Component<IProps> {
         }
       }, 400);
     }
-    graphModel.toFront(model.id);
     const { editConfig: { metaKeyMultipleSelected } } = graphModel;
     graphModel.selectEdgeById(model.id, e.metaKey && metaKeyMultipleSelected);
+    graphModel.toFront(model.id);
     this.preStartTime = this.startTime;
   };
 
@@ -240,6 +243,7 @@ export default class BaseEdge extends Component<IProps> {
         onMouseDown={this.handleMouseDown}
         onMouseUp={this.handleMouseUp}
         onContextMenu={this.handleContextMenu}
+        onMouseOver={this.setHoverON}
         onMouseEnter={this.setHoverON}
         onMouseLeave={this.setHoverOFF}
       >

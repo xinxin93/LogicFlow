@@ -25,6 +25,19 @@ const lf = new LogicFlow(config: Object)
 | edgeType | String | | 'polyline' | 边的类型，支持自定义，内置直线'line'和折线'polyline'，默认折线 |
 | snapline | Boolean | | true | 是否启用节点辅助对齐线 |
 | guards | Array | | - | 是否增加守卫函数，函数返回true则执行默认逻辑，返回false则阻止 |
+| disabledPlugins | Array[pluginName] | | - | 控制当前禁用的插件 |
+|stopZoomGraph|boolean|- |false|禁止缩放画布|
+|stopScrollGraph|boolean|- |false|禁止鼠标滚动移动画布|
+|stopMoveGraph|boolean|- |false|禁止拖动画布|
+|adjustEdge|boolean|- |true|允许调整连线|
+|adjustNodePosition|boolean|- |true|允许拖动节点|
+|hideAnchors|boolean|- |false|隐藏节点所有锚点|
+|hoverOutline|boolean|- |false|鼠标hover的时候显示节点的外框|
+|nodeTextEdit|boolean|- |true|允许节点文本可以编辑|
+|edgeTextEdit|boolean|- |true|允许连线文本可以编辑|
+|nodeTextDraggable|boolean| - |false|允许节点文本可以拖拽|
+|edgeTextDraggable|boolean| - |false|允许连线文本可以拖拽|
+|metaKeyMultipleSelected|boolean| - |false|允许按照meta键多选元素|
 
 ### `background`
 
@@ -73,62 +86,39 @@ export type GridOptions = {
 注册节点
 
 ```js
-register(type: string, fn: RegisterElementFn):void
+register(config):void
 ```
 
 参数：
 
 | 参数名 | 类型 | 必传 |默认值 | 描述 |
 | :- | :- | :- | :- | :- |
-| type | String | ✅ | - | 自定义节点的名称 |
-| fn | Function | ✅ | - | 回调函数，参数包含内部的节点 model 等 |
+| config.type | String | ✅ | - | 自定义节点的名称 |
+| config.model | Model | ✅ | - | 节点的model |
+| config.view | View | ✅ | - | 节点的view |
 
 示例：
 
 ```js
-lf.register('user', ({ RectNode, RectNodeModel, h }) => {
-  // 提供节点
-  class UserNode extends RectNode {
+import { RectNode, RectNodeModel, h } from '@logicflow/core'
+// 提供节点
+class UserNode extends RectNode {
+}
+// 提供节点的属性
+class UserModel extends RectNodeModel {
+  constructor(data) {
+    super(data);
+    const { size } = data.properties;
+    this.width = size * 40;
+    this.height = size * 40;
+    this.fill = 'green';
   }
-  // 提供节点的属性
-  class UserModel extends RectNodeModel {
-    constructor(data) {
-      super(data);
-      const { size } = data.properties;
-      this.width = size * 40;
-      this.height = size * 40;
-      this.fill = 'green';
-    }
-  }
-  // 返回 view 和 model
-  return {
-    view: UserNode,
-    model: UserModel,
-  };
+}
+lf.register({
+  type: 'user',
+  view: UserNode,
+  model: UserModel,
 });
-// 回调函数的参数全集
-// {
-//   BaseEdge,
-//   BaseEdgeModel,
-//   BaseNode,
-//   BaseNodeModel,
-//   RectNode,
-//   RectNodeModel,
-//   CircleNode,
-//   CircleNodeModel,
-//   PolygonNode,
-//   PolygonNodeModel,
-//   TextNode,
-//   TextNodeModel,
-//   LineEdge,
-//   LineEdgeModel,
-//   PolylineEdge,
-//   PolylineEdgeModel,
-//   EllipseNode,
-//   EllipseNodeModel,
-//   mobx,
-//   h,
-// }
 ```
 
 ## addNode
@@ -294,6 +284,9 @@ export enum EventType {
   NODE_DELETE = 'node:delete',
   NODE_ADD = 'node:add',
   NODE_MOUSEDOWN = 'node:mousedown',
+  NODE_DRAGSTART = 'node:dragstart',
+  NODE_DRAG = 'node:drag',
+  NODE_DROP = 'node:drop',
   NODE_MOUSEUP = 'node:mouseup',
   NODE_MOUSEMOVE = 'node:mousemove',
   NODE_CONTEXTMENU = 'node:contextmenu',
@@ -305,6 +298,9 @@ export enum EventType {
   BLANK_MOUSEDOWN = 'blank:mousedown',
   BLANK_MOUSEMOVE = 'blank:mousemove',
   BLANK_MOUSEUP = 'blank:mouseup',
+  BLANK_DRAGSTART = 'blank:dragstart',
+  BLANK_DRAG = 'blank:drag',
+  BLANK_DROP = 'blank:drop',
   BLANK_CLICK = 'blank:click',
   BLANK_CONTEXTMENU = 'blank:contextmenu',
   CONNECTION_NOT_ALLOWED = 'connection:not-allowed',
@@ -447,13 +443,11 @@ focusOn(focusOnArgs: FocusOnArgs): void
 | :- | :- | :- | :- | :- |
 | id | String | | - | 图形的id |
 | coordinate | Object | | - | 图形当前的位置坐标 |
-| type | String | | - | 图形类型，目前仅支持传节点'node'或连线'edge' |
 
 示例：
 
 ```js
 lf.focusOn({
-  type: 'node',
   id: '22'
 })
 
@@ -685,7 +679,7 @@ lf.getGraphData()
 
 ## getGraphRawData
 
-获取流程绘图原始数据
+获取流程绘图原始数据， 与getGraphData区别是该方法获取的数据不会受到adapter影响。
 
 ```ts
 getGraphRawData(): GraphConfigData
@@ -725,4 +719,78 @@ getProperties(id: string): Object
 
 ```js
 lf.getProperties('id')
+```
+
+## updateText
+
+更新节点或者连线的文案
+
+```ts
+updateText(id: string, value: string): void
+```
+
+| 名称 | 类型 | 必传 | 默认值 | 描述 |
+| :- | :- | :- | :- | :- |
+| id | String | ✅ |  | 节点或者连线id |
+| value | String | ✅ |  | 更新后的文本值 |
+
+
+示例：
+
+```js
+lf.updateText('id', 'value')
+```
+
+## getEditConfig
+
+获取流程编辑基本配置
+
+
+```js
+lf.getEditConfig()
+```
+
+## updateEditConfig
+
+更新流程编辑基本配置
+
+详细参数见： 
+
+```js
+lf.updateEditConfig({
+  stopZoomGraph: true
+})
+```
+
+## getSelectElements
+
+获取选中的所有元素
+
+```ts
+getSelectElements(isIgnoreCheck: boolean): GraphConfigData
+```
+
+| 名称 | 类型 | 必传 | 默认值 | 描述 |
+| :- | :- | :- | :- | :- |
+| isIgnoreCheck | boolean | ✅ | true | 是否包括sourceNode和targetNode没有被选中的连线, 默认包括。 |
+
+
+```js
+lf.getSelectElements(false)
+```
+
+## clearSelectElements
+
+取消所有元素的选中状态
+
+```js
+lf.clearSelectElements()
+```
+
+## changeNodeType
+
+修改节点类型
+
+```ts
+lf.changeNodeType(id: string, type: string)
 ```

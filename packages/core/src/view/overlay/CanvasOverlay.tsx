@@ -1,14 +1,12 @@
 import { h, Component } from 'preact';
-import { observer } from 'mobx-react';
-
 import GraphModel from '../../model/GraphModel';
-
 import { ElementState, EventType } from '../../constant/constant';
 import { StepDrag } from '../../util/drag';
 import getTransform from './getTransformHoc';
 import EventEmitter from '../../event/eventEmitter';
 import { GraphTransform } from '../../type';
 import Dnd from '../behavior/DnD';
+import { observer } from '../..';
 
 type IProps = {
   graphModel: GraphModel;
@@ -164,7 +162,7 @@ class CanvasOverlay extends Component<IProps, Istate> {
         className={isDraging ? 'lf-dragging' : 'lf-drag-able'}
         {...dnd.eventMap()}
       >
-        <g style={{ transform }}>
+        <g transform={transform}>
           {children}
         </g>
       </svg>

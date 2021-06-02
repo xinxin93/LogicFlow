@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import LogicFlow from '@logicflow/core';
+import ExampleHeader from '../../../components/example-header';
 
 const config = {
   stopScrollGraph: true,
@@ -49,15 +50,15 @@ const data = {
     {
       id: 20,
       type: 'rect',
-      x: 150,
-      y: 250,
+      x: 180,
+      y: 260,
       text: 'rect'
     },
     {
       id: 30,
       type: 'rect',
-      x: 350,
-      y: 250,
+      x: 320,
+      y: 260,
       text: 'rect'
     }
   ],
@@ -95,5 +96,10 @@ export default function ThemeExample() {
     lf.render(data);
   }, []);
 
-  return <div id="graph" className="viewport" />;
+  return (
+    <>
+      <ExampleHeader githubPath="/advance/theme/index.tsx" />
+      <div id="graph" className="viewport" />
+    </>
+  )
 }
